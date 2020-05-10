@@ -22,6 +22,7 @@
 //! `RUSTFLAGS="-C target-feature=+avx2"` for example.  See the documentation
 //! [here](https://doc.rust-lang.org/stable/core/arch/) for more information.
 
+#[cfg(feature="stdlib")]
 use regex::Regex;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -78,6 +79,7 @@ where
     compare_op!(left, right, op)
 }
 
+#[cfg(feature="stdlib")]
 pub fn like_utf8(left: &StringArray, right: &StringArray) -> Result<BooleanArray> {
     let mut map = HashMap::new();
     if left.len() != right.len() {
@@ -126,6 +128,7 @@ pub fn like_utf8(left: &StringArray, right: &StringArray) -> Result<BooleanArray
     Ok(PrimitiveArray::<BooleanType>::from(Arc::new(data)))
 }
 
+#[cfg(feature="stdlib")]
 pub fn nlike_utf8(left: &StringArray, right: &StringArray) -> Result<BooleanArray> {
     let mut map = HashMap::new();
     if left.len() != right.len() {

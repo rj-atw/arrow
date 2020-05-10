@@ -23,6 +23,7 @@ use std::iter::{FromIterator, IntoIterator};
 use std::mem;
 use std::sync::Arc;
 
+#[cfg(feature="stdlib")]
 use chrono::prelude::*;
 
 use super::*;
@@ -469,6 +470,7 @@ impl<T: ArrowNumericType> PrimitiveArray<T> {
     }
 }
 
+#[cfg(feature="stdlib")]
 impl<T: ArrowTemporalType + ArrowNumericType> PrimitiveArray<T>
 where
     i64: std::convert::From<T::Native>,
@@ -521,6 +523,7 @@ where
     /// Returns value as a chrono `NaiveDate` by using `Self::datetime()`
     ///
     /// If a data type cannot be converted to `NaiveDate`, a `None` is returned
+    #[cfg(feature="stdlib")]
     pub fn value_as_date(&self, i: usize) -> Option<NaiveDate> {
         self.value_as_datetime(i).map(|datetime| datetime.date())
     }
@@ -528,6 +531,7 @@ where
     /// Returns a value as a chrono `NaiveTime`
     ///
     /// `Date32` and `Date64` return UTC midnight as they do not have time resolution
+    #[cfg(feature="stdlib")]
     pub fn value_as_time(&self, i: usize) -> Option<NaiveTime> {
         match self.data_type() {
             DataType::Time32(unit) => {
@@ -604,6 +608,7 @@ impl<T: ArrowNumericType> fmt::Debug for PrimitiveArray<T> {
     }
 }
 
+#[cfg(feature="stdlib")]
 impl<T: ArrowNumericType + ArrowTemporalType> fmt::Debug for PrimitiveArray<T>
 where
     i64: std::convert::From<T::Native>,

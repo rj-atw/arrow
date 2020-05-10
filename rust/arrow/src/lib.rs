@@ -30,6 +30,7 @@ pub mod array;
 pub mod bitmap;
 pub mod buffer;
 pub mod compute;
+#[cfg(feature="stdlib")]
 pub mod csv;
 pub mod datatypes;
 pub mod error;
@@ -41,6 +42,7 @@ pub mod flight;
 #[allow(clippy::redundant_static_lifetimes)]
 #[allow(clippy::redundant_field_names)]
 pub mod ipc;
+#[cfg(feature="stdlib")]
 pub mod json;
 pub mod memory;
 pub mod record_batch;
