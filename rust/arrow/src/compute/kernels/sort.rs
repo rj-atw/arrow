@@ -113,9 +113,9 @@ pub fn sort_to_indices(
 #[derive(Clone)]
 pub struct SortOptions {
     /// Whether to sort in descending order
-    descending: bool,
+    pub descending: bool,
     /// Whether to sort nulls first
-    nulls_first: bool,
+    pub nulls_first: bool,
 }
 
 impl Default for SortOptions {
