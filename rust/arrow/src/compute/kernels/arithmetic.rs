@@ -100,7 +100,7 @@ where
 
 /// SIMD vectorized version of `math_op` above.
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64", target_arch="wasm32"), feature = "simd"))]
-fn simd_math_op<T, F>(
+pub fn simd_math_op<T, F>(
     left: &PrimitiveArray<T>,
     right: &PrimitiveArray<T>,
     op: F,
