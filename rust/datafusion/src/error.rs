@@ -21,6 +21,8 @@ use std::io::Error;
 use std::result;
 
 use arrow::error::ArrowError;
+
+#[cfg(not(target_arch="wasm32"))]
 use parquet::errors::ParquetError;
 
 use sqlparser::sqlparser::ParserError;
@@ -35,6 +37,7 @@ pub enum ExecutionError {
     /// Wraps an error from the Arrow crate
     ArrowError(ArrowError),
     /// Wraps an error from the Parquet crate
+    #[cfg(not(target_arch="wasm32"))]
     ParquetError(ParquetError),
     /// I/O error
     IoError(Error),
@@ -76,6 +79,7 @@ impl From<ArrowError> for ExecutionError {
     }
 }
 
+#[cfg(not(target_arch="wasm32"))]
 impl From<ParquetError> for ExecutionError {
     fn from(e: ParquetError) -> Self {
         ExecutionError::ParquetError(e)
