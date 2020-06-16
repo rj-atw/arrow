@@ -2067,6 +2067,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_arch="wasm32"))]
     fn test_date64_array_from_vec_option() {
         // Test building a primitive array with null values
         // we use Int32 and Int64 as a backing array, so all Int32 and Int64 conventions
@@ -2094,6 +2095,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_arch="wasm32"))]
     fn test_time32_millisecond_array_from_vec() {
         // 1:        00:00:00.001
         // 37800005: 10:30:00.005
@@ -2114,6 +2116,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_arch="wasm32"))]
     fn test_time64_nanosecond_array_from_vec() {
         // Test building a primitive array with null values
         // we use Int32 and Int64 as a backing array, so all Int32 and Int64 conventions

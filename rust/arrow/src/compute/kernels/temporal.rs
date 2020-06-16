@@ -59,6 +59,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(not(target_arch="wasm32"))]
     fn test_temporal_array_date64_hour() {
         let a: PrimitiveArray<Date64Type> =
             vec![Some(1514764800000), None, Some(1550636625000)].into();
@@ -71,6 +72,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_arch="wasm32"))]
     fn test_temporal_array_time32_second_hour() {
         let a: PrimitiveArray<Time32SecondType> = vec![37800, 86339].into();
 
