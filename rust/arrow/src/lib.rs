@@ -30,11 +30,11 @@ pub mod array;
 pub mod bitmap;
 pub mod buffer;
 pub mod compute;
-#[cfg(feature="stdlib")]
+#[cfg(not(target_arch="wasm32"))]
 pub mod csv;
 pub mod datatypes;
 pub mod error;
-#[cfg(feature = "flight")]
+#[cfg(all(feature = "flight",not(target_arch="wasm32")))]
 pub mod flight;
 #[allow(clippy::redundant_closure)]
 #[allow(clippy::needless_lifetimes)]
@@ -42,7 +42,7 @@ pub mod flight;
 #[allow(clippy::redundant_static_lifetimes)]
 #[allow(clippy::redundant_field_names)]
 pub mod ipc;
-#[cfg(feature="stdlib")]
+#[cfg(not(target_arch="wasm32"))]
 pub mod json;
 pub mod memory;
 pub mod record_batch;

@@ -19,7 +19,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-#[cfg(feature="stdlib")]
+#[cfg(not(target_arch="wasm32"))]
 use csv as csv_crate;
 
 /// Many different operations in the `arrow` crate return this error type
@@ -43,7 +43,7 @@ impl From<::std::io::Error> for ArrowError {
     }
 }
 
-#[cfg(feature="stdlib")]
+#[cfg(not(target_arch="wasm32"))]
 impl From<csv_crate::Error> for ArrowError {
     fn from(error: csv_crate::Error) -> Self {
         match error.kind() {

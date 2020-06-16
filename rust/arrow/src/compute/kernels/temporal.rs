@@ -17,7 +17,7 @@
 
 //! Defines temporal kernels for time and date related functions.
 
-#[cfg(feature="stdlib")]
+#[cfg(not(target_arch="wasm32"))]
 use chrono::Timelike;
 
 use crate::array::*;
@@ -25,7 +25,7 @@ use crate::datatypes::*;
 use crate::error::Result;
 
 /// Extracts the hours of a given temporal array as an array of integers
-#[cfg(feature="stdlib")]
+#[cfg(not(target_arch="wasm32"))]
 pub fn hour<T>(array: &PrimitiveArray<T>) -> Result<Int32Array>
 where
     T: ArrowTemporalType + ArrowNumericType,

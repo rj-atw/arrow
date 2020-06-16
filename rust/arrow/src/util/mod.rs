@@ -17,7 +17,7 @@
 
 pub mod bit_util;
 pub(crate) mod integration_util;
-#[cfg(feature="stdlib")]
+#[cfg(not(target_arch="wasm32"))]
 pub mod pretty;
 pub mod string_writer;
 pub mod test_util;
