@@ -74,12 +74,13 @@ touch ${CPYTHON_PATH}/lib/${py_libname}
 echo "=== (${PYTHON_VERSION}) Install the wheel build dependencies ==="
 $PIP install -r requirements-wheel-build.txt
 
+export PYARROW_INSTALL_TESTS=1
 export PYARROW_WITH_DATASET=1
 export PYARROW_WITH_FLIGHT=1
-export PYARROW_WITH_GANDIVA=1
+export PYARROW_WITH_GANDIVA=0
 export BUILD_ARROW_DATASET=ON
 export BUILD_ARROW_FLIGHT=ON
-export BUILD_ARROW_GANDIVA=ON
+export BUILD_ARROW_GANDIVA=OFF
 
 # ARROW-3052(wesm): ORC is being bundled until it can be added to the
 # manylinux1 image
@@ -99,6 +100,7 @@ PATH="${CPYTHON_PATH}/bin:${PATH}" cmake \
     -DARROW_GANDIVA_JAVA=OFF \
     -DARROW_GANDIVA_PC_CXX_FLAGS="-isystem;/opt/rh/devtoolset-8/root/usr/include/c++/8/;-isystem;/opt/rh/devtoolset-8/root/usr/include/c++/8/x86_64-redhat-linux/" \
     -DARROW_GANDIVA=${BUILD_ARROW_GANDIVA} \
+    -DARROW_GRPC_USE_SHARED=OFF \
     -DARROW_HDFS=ON \
     -DARROW_JEMALLOC=ON \
     -DARROW_ORC=OFF \
@@ -113,14 +115,15 @@ PATH="${CPYTHON_PATH}/bin:${PATH}" cmake \
     -DARROW_WITH_SNAPPY=ON \
     -DARROW_WITH_ZLIB=ON \
     -DARROW_WITH_ZSTD=ON \
+    -DARROW_ZSTD_USE_SHARED=OFF \
     -DBoost_NAMESPACE=arrow_boost \
     -DBOOST_ROOT=/arrow_boost_dist \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_INSTALL_PREFIX=/arrow-dist \
+    -DCMAKE_UNITY_BUILD=ON \
     -DOPENSSL_USE_STATIC_LIBS=ON \
     -DORC_SOURCE=BUNDLED \
-    -DPythonInterp_FIND_VERSION=${PYTHON_VERSION} \
     -DZLIB_ROOT=/usr/local \
     -GNinja /arrow/cpp
 ninja install
@@ -151,11 +154,12 @@ $PIP install repaired_wheels/*.whl
 # Test that the modules are importable
 $PYTHON_INTERPRETER -c "
 import pyarrow
+import pyarrow.csv
 import pyarrow.dataset
 import pyarrow.flight
-import pyarrow.gandiva
 import pyarrow.fs
 import pyarrow._hdfs
+import pyarrow.json
 import pyarrow.parquet
 import pyarrow.plasma
 "

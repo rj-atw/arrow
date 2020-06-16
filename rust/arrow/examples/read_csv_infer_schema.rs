@@ -20,7 +20,7 @@ extern crate arrow;
 #[cfg(not(target_arch="wasm32"))]
 use arrow::csv;
 use arrow::error::Result;
-#[cfg(not(target_arch="wasm32"))]
+#[cfg(all(feature="prettyprint", not(target_arch="wasm32")))]
 use arrow::util::pretty::print_batches;
 use std::fs::File;
 
@@ -33,10 +33,13 @@ fn main() {
 fn main() -> Result<()> {
     let file = File::open("test/data/uk_cities_with_headers.csv").unwrap();
     let builder = csv::ReaderBuilder::new()
-        .has_headers(true)
+        .has_header(true)
         .infer_schema(Some(100));
     let mut csv = builder.build(file).unwrap();
-    let batch = csv.next().unwrap().unwrap();
-
-    print_batches(&vec![batch])
+    let _batch = csv.next().unwrap().unwrap();
+    #[cfg(feature = "prettyprint")]
+    {
+        print_batches(&vec![_batch]).unwrap();
+    }
+    Ok(())
 }

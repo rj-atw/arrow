@@ -102,6 +102,9 @@ build_type = click.Choice(["debug", "relwithdebinfo", "release"],
 warn_level_type = click.Choice(["everything", "checkin", "production"],
                                case_sensitive=False)
 
+simd_level = click.Choice(["NONE", "SSE4_2", "AVX2", "AVX512"],
+                          case_sensitive=True)
+
 
 def cpp_toolchain_options(cmd):
     options = [
@@ -133,6 +136,8 @@ def _apply_options(cmd, options):
               help="Controls compiler warnings -W(no-)error.")
 @click.option("--use-gold-linker", default=True, type=BOOL,
               help="Toggles ARROW_USE_LD_GOLD option.")
+@click.option("--simd-level", default="SSE4_2", type=simd_level,
+              help="Toggles ARROW_SIMD_LEVEL option.")
 # Tests and benchmarks
 @click.option("--with-tests", default=True, type=BOOL,
               help="Build with tests.")
@@ -258,7 +263,8 @@ lint_checks = [
     LintCheck('clang-tidy', "Lint C++ files with clang-tidy."),
     LintCheck('cpplint', "Lint C++ files with cpplint."),
     LintCheck('iwyu', "Lint changed C++ files with Include-What-You-Use."),
-    LintCheck('flake8', "Lint Python files with flake8."),
+    LintCheck('python',
+              "Format and lint Python files with autopep8 and flake8."),
     LintCheck('numpydoc', "Lint Python files with numpydoc."),
     LintCheck('cmake-format', "Format CMake files with cmake-format.py."),
     LintCheck('rat',
@@ -461,7 +467,7 @@ def benchmark_run(ctx, rev_or_path, src, preserve, output, cmake_extras,
               help="Regression failure threshold in percentage.")
 @click.argument("contender", metavar="[<contender>",
                 default=ArrowSources.WORKSPACE, required=False)
-@click.argument("baseline", metavar="[<baseline>]]", default="master",
+@click.argument("baseline", metavar="[<baseline>]]", default="origin/master",
                 required=False)
 @click.pass_context
 def benchmark_diff(ctx, src, preserve, output, cmake_extras,
@@ -582,6 +588,8 @@ def _set_default(opt, default):
               help='Include JavaScript in integration tests')
 @click.option('--with-go', type=bool, default=False,
               help='Include Go in integration tests')
+@click.option('--with-rust', type=bool, default=False,
+              help='Include Rust in integration tests')
 @click.option('--write_generated_json', default=False,
               help='Generate test JSON to indicated path')
 @click.option('--run-flight', is_flag=True, default=False,
@@ -685,6 +693,8 @@ def docker_compose(obj, src):
               help="Whether to force pull the image and its ancestor images")
 @click.option('--force-build/--no-build', default=True,
               help="Whether to force build the image and its ancestor images")
+@click.option('--build-only', default=False, is_flag=True,
+              help="Pull and/or build the image, but do not run it")
 @click.option('--use-cache/--no-cache', default=True,
               help="Whether to use cache when building the image and its "
                    "ancestor images")
@@ -698,8 +708,8 @@ def docker_compose(obj, src):
 @click.option('--volume', '-v', multiple=True,
               help="Set volume within the container")
 @click.pass_obj
-def docker_compose_run(obj, image, command, env, force_pull, force_build,
-                       use_cache, use_leaf_cache, dry_run, volume):
+def docker_compose_run(obj, image, command, *, env, force_pull, force_build,
+                       build_only, use_cache, use_leaf_cache, dry_run, volume):
     """Execute docker-compose builds.
 
     To see the available builds run `archery docker list`.
@@ -752,6 +762,7 @@ def docker_compose_run(obj, image, command, env, force_pull, force_build,
             env=env,
             force_pull=force_pull,
             force_build=force_build,
+            build_only=build_only,
             use_cache=use_cache,
             use_leaf_cache=use_leaf_cache,
             volumes=volume

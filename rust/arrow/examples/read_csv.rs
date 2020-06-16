@@ -24,7 +24,7 @@ use std::sync::Arc;
 use arrow::csv;
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::error::Result;
-#[cfg(not(target_arch="wasm32"))]
+#[cfg(all(feature="prettyprint"), not(target_arch="wasm32"))]
 use arrow::util::pretty::print_batches;
 
 #[cfg(target_arch="wasm32")]
@@ -40,7 +40,11 @@ fn main() -> Result<()> {
 
     let file = File::open("test/data/uk_cities.csv").unwrap();
 
-    let mut csv = csv::Reader::new(file, Arc::new(schema), false, 1024, None);
-    let batch = csv.next().unwrap().unwrap();
-    print_batches(&vec![batch])
+    let mut csv = csv::Reader::new(file, Arc::new(schema), false, None, 1024, None);
+    let _batch = csv.next().unwrap().unwrap();
+    #[cfg(feature = "prettyprint")]
+    {
+        print_batches(&vec![_batch]).unwrap();
+    }
+    Ok(())
 }

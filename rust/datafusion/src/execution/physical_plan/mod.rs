@@ -93,9 +93,11 @@ pub mod expressions;
 pub mod hash_aggregate;
 pub mod limit;
 pub mod math_expressions;
+pub mod memory;
 pub mod merge;
 #[cfg(not(target_arch="wasm32"))]
 pub mod parquet;
 pub mod projection;
 pub mod selection;
+pub mod sort;
 pub mod udf;

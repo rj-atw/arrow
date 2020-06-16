@@ -20,10 +20,13 @@ import os
 import sys
 import tempfile
 import pytest
+import hypothesis as h
+import hypothesis.strategies as st
 
 import numpy as np
 
 import pyarrow as pa
+import pyarrow.tests.strategies as past
 from pyarrow.feather import (read_feather, write_feather, read_table,
                              FeatherDataset)
 
@@ -42,6 +45,11 @@ def random_path(prefix='feather_'):
 
 @pytest.fixture(scope="module", params=[1, 2])
 def version(request):
+    yield request.param
+
+
+@pytest.fixture(scope="module", params=[None, "uncompressed", "lz4", "zstd"])
+def compression(request):
     yield request.param
 
 
@@ -87,12 +95,12 @@ def _check_pandas_roundtrip(df, expected=None, path=None,
     assert_frame_equal(result, expected)
 
 
-def _check_arrow_roundtrip(table, path=None):
+def _check_arrow_roundtrip(table, path=None, compression=None):
     if path is None:
         path = random_path()
 
     TEST_FILES.append(path)
-    write_feather(table, path)
+    write_feather(table, path, compression=compression)
     if not os.path.exists(path):
         raise Exception('file not written')
 
@@ -637,6 +645,26 @@ def test_v2_compression_options():
         write_feather(df, buf, compression='snappy')
 
 
+def test_v2_lz4_default_compression():
+    # ARROW-8750: Make sure that the compression=None option selects lz4 if
+    # it's available
+    if not pa.Codec.is_available('lz4_frame'):
+        pytest.skip("LZ4 compression support is not built in C++")
+
+    # some highly compressible data
+    t = pa.table([np.repeat(0, 100000)], names=['f0'])
+
+    buf = io.BytesIO()
+    write_feather(t, buf)
+    default_result = buf.getvalue()
+
+    buf = io.BytesIO()
+    write_feather(t, buf, compression='uncompressed')
+    uncompressed_result = buf.getvalue()
+
+    assert len(default_result) < len(uncompressed_result)
+
+
 def test_v1_unsupported_types():
     table = pa.table([pa.array([[1, 2, 3], [], None])], names=['f0'])
 
@@ -733,3 +761,21 @@ def test_read_column_duplicated_in_file(tempdir):
     # selection with column names errors
     with pytest.raises(ValueError):
         read_table(path, columns=['a', 'b'])
+
+
+def test_nested_types(compression):
+    # https://issues.apache.org/jira/browse/ARROW-8860
+    table = pa.table({'col': pa.StructArray.from_arrays(
+        [[0, 1, 2], [1, 2, 3]], names=["f1", "f2"])})
+    _check_arrow_roundtrip(table, compression=compression)
+
+    table = pa.table({'col': pa.array([[1, 2], [3, 4]])})
+    _check_arrow_roundtrip(table, compression=compression)
+
+    table = pa.table({'col': pa.array([[[1, 2], [3, 4]], [[5, 6], None]])})
+    _check_arrow_roundtrip(table, compression=compression)
+
+
+@h.given(past.all_tables, st.sampled_from(["uncompressed", "lz4", "zstd"]))
+def test_roundtrip(table, compression):
+    _check_arrow_roundtrip(table, compression=compression)

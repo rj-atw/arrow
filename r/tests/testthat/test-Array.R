@@ -215,7 +215,7 @@ test_that("array supports POSIXct (ARROW-3340)", {
   expect_array_roundtrip(times2, timestamp("us", "US/Eastern"))
 })
 
-test_that("array supports POSIXlt and without timezone", {
+test_that("array supports POSIXct without timezone", {
   # Make sure timezone is not set
   tz <- Sys.getenv("TZ")
   Sys.setenv(TZ = "")
@@ -385,6 +385,14 @@ test_that("Array<int8>$as_vector() converts to integer (ARROW-3794)", {
   expect_equal(a$as_vector(), 0:255)
 })
 
+test_that("Arrays of uint{32,64} convert to numeric", {
+  u32 <- Array$create(1L)$cast(uint32())
+  expect_identical(as.vector(u32), 1)
+
+  u64 <- Array$create(1L)$cast(uint64())
+  expect_identical(as.vector(u64), 1)
+})
+
 test_that("Array$create() recognise arrow::Array (ARROW-3815)", {
   a <- Array$create(1:10)
   expect_equal(a, Array$create(a))
@@ -445,6 +453,23 @@ test_that("Array$create() handles vector -> list arrays (ARROW-7662)", {
   expect_array_roundtrip(list(character(0)), list_of(utf8()))
   expect_array_roundtrip(list("itsy", c("bitsy", "spider"), c("is")), list_of(utf8()))
   expect_array_roundtrip(list("itsy", character(0), c("bitsy", "spider", NA_character_), c("is")), list_of(utf8()))
+
+  # factor
+  expect_array_roundtrip(list(factor(c("b", "a"), levels = c("a", "b"))), list_of(dictionary(int8(), utf8())))
+  expect_array_roundtrip(list(factor(NA, levels = c("a", "b"))), list_of(dictionary(int8(), utf8())))
+
+  # struct
+  expect_array_roundtrip(
+    list(tibble::tibble(a = integer(0), b = integer(0), c = character(0), d = logical(0))),
+    list_of(struct(a = int32(), b = int32(), c = utf8(), d = bool()))
+  )
+  expect_array_roundtrip(
+    list(tibble::tibble(a = list(integer()))),
+    list_of(struct(a = list_of(int32())))
+  )
+  # degenerated data frame
+  df <- structure(list(x = 1:2, y = 1), class = "data.frame", row.names = 1:2)
+  expect_error(Array$create(list(df)))
 })
 
 test_that("Array$create() should have helpful error on lists with type hint", {
@@ -517,6 +542,7 @@ test_that("[ method on Array", {
   expect_vector(a[5:9], vec[5:9])
   expect_vector(a[c(9, 3, 5)], vec[c(9, 3, 5)])
   expect_vector(a[rep(c(TRUE, FALSE), 5)], vec[c(1, 3, 5, 7, 9)])
+  expect_vector(a[rep(c(TRUE, FALSE, NA, FALSE, TRUE), 2)], c(11, NA, 15, 16, NA, 20))
   expect_vector(a[-4], vec[-4])
   expect_vector(a[-1], vec[-1])
 })

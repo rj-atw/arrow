@@ -21,6 +21,8 @@ members = [
         "parquet",
         "datafusion",
         "arrow-flight",
+        "integration-testing",
+	"benchmarks",
 ]
 default-members= [
         "arrow",

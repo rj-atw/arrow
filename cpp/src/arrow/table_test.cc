@@ -22,15 +22,15 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "arrow/array.h"
+#include "arrow/array/util.h"
 #include "arrow/record_batch.h"
 #include "arrow/status.h"
 #include "arrow/table.h"
 #include "arrow/testing/gtest_common.h"
 #include "arrow/testing/gtest_util.h"
 #include "arrow/testing/random.h"
-#include "arrow/testing/util.h"
 #include "arrow/type.h"
+#include "arrow/util/bit_util.h"
 #include "arrow/util/key_value_metadata.h"
 
 namespace arrow {
@@ -150,6 +150,17 @@ TEST_F(TestChunkedArray, SliceEquals) {
   ASSERT_EQ(slice5->length(), 0);
   ASSERT_EQ(slice5->num_chunks(), 1);
   ASSERT_TRUE(slice5->type()->Equals(one_->type()));
+}
+
+TEST_F(TestChunkedArray, ZeroChunksIssues) {
+  ArrayVector empty = {};
+  auto no_chunks = std::make_shared<ChunkedArray>(empty, int8());
+
+  // ARROW-8911, assert that slicing is a no-op when there are zero-chunks
+  auto sliced = no_chunks->Slice(0, 0);
+  auto sliced2 = no_chunks->Slice(0, 5);
+  AssertChunkedEqual(*no_chunks, *sliced);
+  AssertChunkedEqual(*no_chunks, *sliced2);
 }
 
 TEST_F(TestChunkedArray, Validate) {
@@ -830,18 +841,20 @@ TEST_F(TestRecordBatch, Validate) {
 }
 
 TEST_F(TestRecordBatch, Slice) {
-  const int length = 10;
+  const int length = 7;
 
   auto f0 = field("f0", int32());
   auto f1 = field("f1", uint8());
+  auto f2 = field("f2", int8());
 
-  std::vector<std::shared_ptr<Field>> fields = {f0, f1};
+  std::vector<std::shared_ptr<Field>> fields = {f0, f1, f2};
   auto schema = ::arrow::schema(fields);
 
   auto a0 = MakeRandomArray<Int32Array>(length);
   auto a1 = MakeRandomArray<UInt8Array>(length);
+  auto a2 = ArrayFromJSON(int8(), "[0, 1, 2, 3, 4, 5, 6]");
 
-  auto batch = RecordBatch::Make(schema, length, {a0, a1});
+  auto batch = RecordBatch::Make(schema, length, {a0, a1, a2});
 
   auto batch_slice = batch->Slice(2);
   auto batch_slice2 = batch->Slice(1, 5);
@@ -855,6 +868,11 @@ TEST_F(TestRecordBatch, Slice) {
     ASSERT_EQ(1, batch_slice2->column(i)->offset());
     ASSERT_EQ(5, batch_slice2->column(i)->length());
   }
+
+  // ARROW-9143: RecordBatch::Slice was incorrectly setting a2's
+  // ArrayData::null_count to kUnknownNullCount
+  ASSERT_EQ(batch_slice->column(2)->data()->null_count, 0);
+  ASSERT_EQ(batch_slice2->column(2)->data()->null_count, 0);
 }
 
 TEST_F(TestRecordBatch, AddColumn) {
@@ -953,6 +971,25 @@ TEST_F(TestRecordBatch, RemoveColumnEmpty) {
 
   ASSERT_OK_AND_ASSIGN(auto added, empty->AddColumn(0, field1, array1));
   AssertBatchesEqual(*added, *batch1);
+}
+
+TEST_F(TestRecordBatch, ToFromEmptyStructArray) {
+  auto batch1 =
+      RecordBatch::Make(::arrow::schema({}), 10, std::vector<std::shared_ptr<Array>>{});
+  ASSERT_OK_AND_ASSIGN(auto struct_array, batch1->ToStructArray());
+  ASSERT_EQ(10, struct_array->length());
+  ASSERT_OK_AND_ASSIGN(auto batch2, RecordBatch::FromStructArray(struct_array));
+  ASSERT_TRUE(batch1->Equals(*batch2));
+}
+
+TEST_F(TestRecordBatch, FromStructArrayInvalidType) {
+  ASSERT_RAISES(Invalid, RecordBatch::FromStructArray(MakeRandomArray<Int32Array>(10)));
+}
+
+TEST_F(TestRecordBatch, FromStructArrayInvalidNullCount) {
+  auto struct_array =
+      ArrayFromJSON(struct_({field("f1", int32())}), R"([{"f1": 1}, null])");
+  ASSERT_RAISES(Invalid, RecordBatch::FromStructArray(struct_array));
 }
 
 class TestTableBatchReader : public TestBase {};

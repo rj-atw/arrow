@@ -224,6 +224,8 @@ struct ARROW_EXPORT LargeStringScalar : public LargeBinaryScalar {
   explicit LargeStringScalar(std::shared_ptr<Buffer> value)
       : LargeStringScalar(std::move(value), large_utf8()) {}
 
+  explicit LargeStringScalar(std::string s);
+
   LargeStringScalar() : LargeStringScalar(large_utf8()) {}
 };
 
@@ -361,7 +363,9 @@ struct ARROW_EXPORT StructScalar : public Scalar {
   using TypeClass = StructType;
   using ValueType = std::vector<std::shared_ptr<Scalar>>;
 
-  std::vector<std::shared_ptr<Scalar>> value;
+  ScalarVector value;
+
+  Result<std::shared_ptr<Scalar>> field(FieldRef ref) const;
 
   StructScalar(ValueType value, std::shared_ptr<DataType> type)
       : Scalar(std::move(type), true), value(std::move(value)) {}
@@ -371,7 +375,16 @@ struct ARROW_EXPORT StructScalar : public Scalar {
 
 struct ARROW_EXPORT UnionScalar : public Scalar {
   using Scalar::Scalar;
-  using TypeClass = UnionType;
+};
+
+struct ARROW_EXPORT SparseUnionScalar : public UnionScalar {
+  using UnionScalar::UnionScalar;
+  using TypeClass = SparseUnionType;
+};
+
+struct ARROW_EXPORT DenseUnionScalar : public UnionScalar {
+  using UnionScalar::UnionScalar;
+  using TypeClass = DenseUnionType;
 };
 
 struct ARROW_EXPORT DictionaryScalar : public Scalar {

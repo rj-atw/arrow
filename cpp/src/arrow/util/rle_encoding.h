@@ -26,6 +26,7 @@
 
 #include "arrow/util/bit_stream_utils.h"
 #include "arrow/util/bit_util.h"
+#include "arrow/util/bitmap_reader.h"
 #include "arrow/util/macros.h"
 
 namespace arrow {
@@ -592,11 +593,12 @@ bool RleDecoder::NextCounts() {
       return false;
     }
     repeat_count_ = count;
-    // XXX (ARROW-4018) this is not big-endian compatible
+    T value = 0;
     if (!bit_reader_.GetAligned<T>(static_cast<int>(BitUtil::CeilDiv(bit_width_, 8)),
-                                   reinterpret_cast<T*>(&current_value_))) {
+                                   &value)) {
       return false;
     }
+    current_value_ = static_cast<uint64_t>(value);
   }
   return true;
 }
