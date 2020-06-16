@@ -18,5 +18,11 @@
 [workspace]
 members = [
         "arrow",
+        "parquet",
+        "datafusion",
+        "arrow-flight",
+]
+default-members= [
+        "arrow",
         "datafusion"
 ]
