@@ -98,6 +98,7 @@ impl Display for ExecutionError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match *self {
             ExecutionError::ArrowError(ref desc) => write!(f, "Arrow error: {}", desc),
+            #[cfg(not(target_arch="wasm32"))]
             ExecutionError::ParquetError(ref desc) => {
                 write!(f, "Parquet error: {}", desc)
             }
